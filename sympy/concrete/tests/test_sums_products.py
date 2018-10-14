@@ -542,11 +542,12 @@ def test_equality():
             assert F(1, x) != F(1, y)
         except ValueError:
             pass
-        assert F(a, (x, 1, 2)) != F(a, (x, 1, 3))
-        assert F(a, (x, 1, 2)) != F(b, (x, 1, 2))
-        assert F(x, (x, 1, 2)) != F(r, (r, 1, 2))
-        assert F(1, (x, 1, x)) != F(1, (y, 1, x))
-        assert F(1, (x, 1, x)) != F(1, (y, 1, y))
+        assert F(a, (x, 1, 2)) != F(a, (x, 1, 3))  # diff limit
+        assert F(a, (x, 1, x)) != F(a, (y, 1, y))
+        assert F(a, (x, 1, 2)) != F(b, (x, 1, 2))  # diff expression
+        assert F(x, (x, 1, 2)) != F(r, (r, 1, 2))  # diff assumptions
+        assert F(1, (x, 1, x)) != F(1, (y, 1, x))  # only dummy is diff
+        assert F(1, (x, 1, x)).dummy_eq(F(1, (y, 1, x)))
 
     # issue 5265
     assert Sum(x, (x, 1, x)).subs(x, a) == Sum(x, (x, 1, a))
@@ -1012,6 +1013,21 @@ def test_issue_10156():
     e = 2*y*Sum(2*cx*x**2, (x, 1, 9))
     assert e.factor() == \
         8*y**3*Sum(x, (x, 1, 3))*Sum(x**2, (x, 1, 9))
+
+
+def test_issue_14129():
+    assert Sum( k*x**k, (k, 0, n-1)).doit() == \
+        Piecewise((n**2/2 - n/2, Eq(x, 1)), ((n*x*x**n -
+            n*x**n - x*x**n + x)/(x - 1)**2, True))
+    assert Sum( x**k, (k, 0, n-1)).doit() == \
+        Piecewise((n, Eq(x, 1)), ((-x**n + 1)/(-x + 1), True))
+    assert Sum( k*(x/y+x)**k, (k, 0, n-1)).doit() == \
+        Piecewise((n*(n - 1)/2, Eq(x, y/(y + 1))),
+        (x*(y + 1)*(n*x*y*(x + x/y)**n/(x + x/y)
+        + n*x*(x + x/y)**n/(x + x/y) - n*y*(x
+        + x/y)**n/(x + x/y) - x*y*(x + x/y)**n/(x
+        + x/y) - x*(x + x/y)**n/(x + x/y) + y)/(x*y
+        + x - y)**2, True))
 
 
 def test_issue_14112():
